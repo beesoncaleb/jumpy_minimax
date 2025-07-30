@@ -20,95 +20,107 @@ typedef struct {
 // Function declarations
 int static_estimator(int[], int);
 int compute_win(int[]);
-Val_Board minimax(int[], int, int, int, int, int);
+void minimax(int[], int, int, int, int, int, Val_Board*);
 void compute_move(int, int, int, int, int, int*);
 
-
 // White is a maximizer, black is a minimizer
-Val_Board minimax(int *board, int alpha, int beta, int player_turn, int depth, int max_depth) {
+void minimax(int *board, int alpha, int beta, int player_turn, int depth, int max_depth, Val_Board *result) {
   if (depth == max_depth) {
-    return (Val_Board){static_estimator(board, player_turn), board, 0};
+    result->val = static_estimator(board, player_turn);
+    result->board = board;
+    result->best_choice = 0;
+    return;
   }
 
   int checkwin = compute_win(board);
   if (checkwin != 0) {
-    return (Val_Board){checkwin, board, 0};
+    result->val = checkwin;
+    result->board = board;
+    result->best_choice = 0;
+    return;
   }
 
   if (player_turn == WHITE_TURN) {
-    Val_Board result = {NEG_INF, board, 0};
+    result->val = NEG_INF;
+    for (int i = 0; i<BOARD_LEN; i++) {result->board[i] = board[i];}
     if (board[0] != 9) {
       int possible_board[BOARD_LEN];
       compute_move(board[0], board[1], board[2], board[3], WHITE_TURN, possible_board);
-      Val_Board compare = minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth);
+      Val_Board compare;
+      minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth, &compare);
 
-      if (compare.val > result.val) {
-        result.val = compare.val;
-        result.best_choice = compare.board;
+      if (compare.val > result->val) {
+        result->val = compare.val;
+        result->best_choice = compare.board;
+        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
       }
 
-      if (result.val >= beta) {
-        return result;
+      if (result->val >= beta) {
+        return;
       }
-      alpha = (result.val > alpha) ? result.val : alpha;
+      alpha = (result->val > alpha) ? result->val : alpha;
     }
 
     if (board[1] != 9) {
       int possible_board[BOARD_LEN];
       compute_move(board[1], board[0], board[2], board[3], WHITE_TURN, possible_board);
-      Val_Board compare = minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth);
+      Val_Board compare;
+      minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth, &compare);
 
-      if (compare.val > result.val) {
-        result.val = compare.val;
-        result.best_choice = compare.board;
+      if (compare.val > result->val) {
+        result->val = compare.val;
+        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
       }
 
-      if (result.val >= beta) {
-        return result;
+      if (result->val >= beta) {
+        return;
       }
-      alpha = (result.val > alpha) ? result.val : alpha;
+      alpha = (result->val > alpha) ? result->val : alpha;
     }
-
-    return result;
+    return;
   }
   else if (player_turn == BLACK_TURN) {
-    Val_Board result = {POS_INF, board, 0};
+    result->val = POS_INF;
+    for (int i = 0; i<BOARD_LEN; i++) {result->board[i] = board[i];}
     if (board[2] != 0) {
       int possible_board[BOARD_LEN];
       compute_move(board[2], board[3], board[0], board[1], BLACK_TURN, possible_board);
-      Val_Board compare = minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth);
+      Val_Board compare;
+      minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth, &compare);
 
-      if (compare.val < result.val) {
-        result.val = compare.val;
-        result.best_choice = compare.board;
+      if (compare.val < result->val) {
+        result->val = compare.val;
+        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
       }
 
-      if (result.val <= alpha) {
-        return result;
+      if (result->val <= alpha) {
+        return;
       }
-      beta = (result.val < beta) ? result.val : beta;
+      beta = (result->val < beta) ? result->val : beta;
     }
 
     if (board[3] != 0) {
       int possible_board[BOARD_LEN];
       compute_move(board[3], board[2], board[0], board[1], BLACK_TURN, possible_board);
-      Val_Board compare = minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth);
+      Val_Board compare;
+      minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth, &compare);
 
-      if (compare.val < result.val) {
-        result.val = compare.val;
-        result.best_choice = compare.board;
+      if (compare.val < result->val) {
+        result->val = compare.val;
+        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
       }
 
-      if (result.val <= alpha) {
-        return result;
+      if (result->val <= alpha) {
+        return;
       }
-      beta = (result.val < beta) ? result.val : beta;
+      beta = (result->val < beta) ? result->val : beta;
     }
-
-    return result;
+    return;
   }
   else {
-    return (Val_Board){0};
+    result->val = 0;
+    result->board = 0;
+    result->best_choice = 0;
   }
 }
 
@@ -191,7 +203,7 @@ int compute_win(int board[]) {
 }
 
 void compute_move(int dynamic_plr, int static_plr, int enemy_plr1, int enemy_plr2, int player_turn, int *return_board) {
-  int potential_move = dynamic_plr + player_turn;   // player_turn used as direction of movement
+  int potential_move = dynamic_plr + player_turn;   // player_turn used as direction of movement: +1 or -1
   bool e1jumped = false;
   bool e2jumped = false;
 
@@ -215,21 +227,23 @@ void compute_move(int dynamic_plr, int static_plr, int enemy_plr1, int enemy_plr
     reset_start = 8;
   }
   else {
-    reset_start = 0;
+    reset_start = 1;
   }
 
   if (e1jumped) {
-    while (dynamic_plr == reset_start || static_plr == reset_start || enemy_plr2 == reset_start) {
-      reset_start -= player_turn;
+    int curr = reset_start;
+    while (dynamic_plr == curr || static_plr == curr || enemy_plr2 == curr) {
+      curr -= player_turn;
     }
-    enemy_plr1 = reset_start;
+    enemy_plr1 = curr;
   }
 
   if (e2jumped) {
-    while (dynamic_plr == reset_start || static_plr == reset_start || enemy_plr1 == reset_start) {
-      reset_start -= player_turn;
+    int curr = reset_start;
+    while (dynamic_plr == curr || static_plr == curr || enemy_plr1 == curr) {
+      curr -= player_turn;
     }
-    enemy_plr2 = reset_start;
+    enemy_plr2 = curr;
   }
 
   if (player_turn == WHITE_TURN) {
@@ -272,10 +286,11 @@ void compute_move(int dynamic_plr, int static_plr, int enemy_plr1, int enemy_plr
 
 int main() {
   int board[] = {3, 5, 6, 7};
-  Val_Board move = minimax(board, NEG_INF, POS_INF, WHITE_TURN, 0, 16);
+  Val_Board move;
+  minimax(board, NEG_INF, POS_INF, WHITE_TURN, 0, 32, &move);
 
   printf("Starting Position: %d%d%d%d\n\n", board[0], board[1], board[2], board[3]);
   printf("Chosen Move: %d%d%d%d\n", move.best_choice[0], move.best_choice[1], move.best_choice[2], move.best_choice[3]);
   printf("Value: %d\n", move.val);
-  printf("Moves Consider: %d\n", static_counter);
+  printf("Moves Considered: %d\n", static_counter);
 }
