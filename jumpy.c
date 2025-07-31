@@ -9,118 +9,294 @@
 #define POS_INF 999999
 #define NEG_INF -999999
 int static_counter = 0;
+int best_move[BOARD_LEN];
 
-// Struct so that board state can be passed up in recursion
-typedef struct {
-  int val;
-  int *board;
-  int *best_choice;
-} Val_Board;
+// singly linked list of moves
+typedef struct movelist{
+  int w1;
+  int w2;
+  int b1;
+  int b2;
+  struct movelist* next;
+} movelist;
 
 // Function declarations
 int static_estimator(int[], int);
 int compute_win(int[]);
-void minimax(int[], int, int, int, int, int, Val_Board*);
-void compute_move(int, int, int, int, int, int*);
+int white_maximizer(int[], int, int, int, int);
+int black_minimizer(int[], int, int, int, int);
+int minimax(int[], int, int);
+movelist* compute_moves(int, int, int, int, int);
 
-// White is a maximizer, black is a minimizer
-void minimax(int *board, int alpha, int beta, int player_turn, int depth, int max_depth, Val_Board *result) {
-  if (depth == max_depth) {
-    result->val = static_estimator(board, player_turn);
-    result->board = board;
-    result->best_choice = 0;
-    return;
+int minimax(int board[], int depth, int player_turn) {
+  if (depth < 0) {
+    best_move[0] = -1;
+    best_move[1] = -1;
+    best_move[2] = -1;
+    best_move[3] = -1;
+    return 0;
   }
 
   int checkwin = compute_win(board);
   if (checkwin != 0) {
-    result->val = checkwin;
-    result->board = board;
-    result->best_choice = 0;
-    return;
+    
   }
+  movelist* moves = compute_moves(board, player_turn);
+}
+
+int white_maximizer(int board[], int alpha, int beta, int depth, int player_turn) {
+  return 0;
+}
+
+int black_minimizer(int board[], int alpha, int beta, int depth, int player_turn) {
+  return 0;
+}
+
+movelist* compute_moves(int board[], int player_turn) {
+  int w1 = board[0];
+  int w2 = board[1];
+  int b1 = board[2];
+  int b2 = board[3];
 
   if (player_turn == WHITE_TURN) {
-    result->val = NEG_INF;
-    for (int i = 0; i<BOARD_LEN; i++) {result->board[i] = board[i];}
-    if (board[0] != 9) {
-      int possible_board[BOARD_LEN];
-      compute_move(board[0], board[1], board[2], board[3], WHITE_TURN, possible_board);
-      Val_Board compare;
-      minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth, &compare);
+    movelist *move1 = malloc(sizeof(movelist));
+    move1->next = NULL;
+    move1->w1 = -1;   // use w1 to signal whether ally2 should extend linkedlist or not
+    if (w1 != 9) {
+      int tw1 = w1;
+      int tw2 = w2;
+      int tb1 = b1;
+      int tb2 = b2;
+      int potential_move = tw1 + 1;
+      bool b1jumped = false;
+      bool b2jumped = false;
 
-      if (compare.val > result->val) {
-        result->val = compare.val;
-        result->best_choice = compare.board;
-        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
+      while ((potential_move ==  tw2 && tw2 != 9) || potential_move == tb1 || potential_move == tb2) {
+        if (potential_move == tb1) {
+          b1jumped = true;
+        }
+        if (potential_move == tb2) {
+          b2jumped = true;
+        }
+        potential_move++;
+      }
+      tw1 = potential_move;
+
+      if (b1jumped) {
+        int curr = 8;
+        while (curr == tw1 || curr == tw2 || curr == tb2) {
+          curr--;
+        }
+        tb1 = curr;
+      }
+      if (b2jumped) {
+        int curr = 8;
+        while (curr == tw1 || curr == tw2 || curr == tb1) {
+          curr--;
+        }
+        tb2 = curr;
       }
 
-      if (result->val >= beta) {
-        return;
+      if (tw1 < tw2) {
+        move1->w1 = tw1;
+        move1->w2 = tw2;
       }
-      alpha = (result->val > alpha) ? result->val : alpha;
+      else {
+        move1->w1 = tw2;
+        move1->w2 = tw1;
+      }
+      if (tb1 < tb2) {
+        move1->b1 = tb1;
+        move1->b2 = tb2;
+      }
+      else {
+        move1->b1 = tb2;
+        move1->b2 = tb1;
+      }
     }
+    if (w2 != 9) {
+      movelist *move2 = malloc(sizeof(movelist));
+      move2->next = NULL;
+      int tw1 = w1;
+      int tw2 = w2;
+      int tb1 = b1;
+      int tb2 = b2;
+      int potential_move = tw2 + 1;
+      bool b1jumped = false;
+      bool b2jumped = false;
 
-    if (board[1] != 9) {
-      int possible_board[BOARD_LEN];
-      compute_move(board[1], board[0], board[2], board[3], WHITE_TURN, possible_board);
-      Val_Board compare;
-      minimax(possible_board, alpha, beta, BLACK_TURN, depth+1, max_depth, &compare);
+      while ((potential_move ==  tw1 && tw1 != 9) || potential_move == tb1 || potential_move == tb2) {
+        if (potential_move == tb1) {
+          b1jumped = true;
+        }
+        if (potential_move == tb2) {
+          b2jumped = true;
+        }
+        potential_move++;
+      }
+      tw2 = potential_move;
 
-      if (compare.val > result->val) {
-        result->val = compare.val;
-        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
+      if (b1jumped) {
+        int curr = 8;
+        while (curr == tw1 || curr == tw2 || curr == tb2) {
+          curr--;
+        }
+        tb1 = curr;
+      }
+      if (b2jumped) {
+        int curr = 8;
+        while (curr == tw1 || curr == tw2 || curr == tb1) {
+          curr--;
+        }
+        tb2 = curr;
       }
 
-      if (result->val >= beta) {
-        return;
+      if (tw1 < tw2) {
+        move2->w1 = tw1;
+        move2->w2 = tw2;
       }
-      alpha = (result->val > alpha) ? result->val : alpha;
+      else {
+        move2->w1 = tw2;
+        move2->w2 = tw1;
+      }
+      if (tb1 < tb2) {
+        move2->b1 = tb1;
+        move2->b2 = tb2;
+      }
+      else {
+        move2->b1 = tb2;
+        move2->b2 = tb1;
+      }
+
+      if (move1->w1 == -1) {
+        free(move1);
+        return move2;
+      }
+      else {
+        move1->next = move2;
+      }
     }
-    return;
-  }
-  else if (player_turn == BLACK_TURN) {
-    result->val = POS_INF;
-    for (int i = 0; i<BOARD_LEN; i++) {result->board[i] = board[i];}
-    if (board[2] != 0) {
-      int possible_board[BOARD_LEN];
-      compute_move(board[2], board[3], board[0], board[1], BLACK_TURN, possible_board);
-      Val_Board compare;
-      minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth, &compare);
-
-      if (compare.val < result->val) {
-        result->val = compare.val;
-        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
-      }
-
-      if (result->val <= alpha) {
-        return;
-      }
-      beta = (result->val < beta) ? result->val : beta;
-    }
-
-    if (board[3] != 0) {
-      int possible_board[BOARD_LEN];
-      compute_move(board[3], board[2], board[0], board[1], BLACK_TURN, possible_board);
-      Val_Board compare;
-      minimax(possible_board, alpha, beta, WHITE_TURN, depth+1, max_depth, &compare);
-
-      if (compare.val < result->val) {
-        result->val = compare.val;
-        for (int i=0; i<BOARD_LEN; i++) {result->best_choice[i] = compare.board[i];}
-      }
-
-      if (result->val <= alpha) {
-        return;
-      }
-      beta = (result->val < beta) ? result->val : beta;
-    }
-    return;
+    return move1;
   }
   else {
-    result->val = 0;
-    result->board = 0;
-    result->best_choice = 0;
+    movelist *move1 = malloc(sizeof(movelist));
+    move1->next = NULL;
+    move1->w1 = -1;   // use w1 to signal whether ally2 should extend linkedlist or not
+    if (b1 != 0) {
+      int tw1 = w1;
+      int tw2 = w2;
+      int tb1 = b1;
+      int tb2 = b2;
+      int potential_move = tb1 - 1;
+      bool w1jumped = false;
+      bool w2jumped = false;
+
+      while ((potential_move ==  tb2 && tb2 != 0) || potential_move == tw1 || potential_move == tw2) {
+        if (potential_move == tw1) {
+          w1jumped = true;
+        }
+        if (potential_move == tw2) {
+          w2jumped = true;
+        }
+        potential_move--;
+      }
+      tb1 = potential_move;
+
+      if (w1jumped) {
+        int curr = 1;
+        while (curr == tb1 || curr == tb2 || curr == tw2) {
+          curr++;
+        }
+        tw1 = curr;
+      }
+      if (w2jumped) {
+        int curr = 1;
+        while (curr == tb1 || curr == tb2 || curr == tw1) {
+          curr++;
+        }
+        tw2 = curr;
+      }
+
+      if (tw1 < tw2) {
+        move1->w1 = tw1;
+        move1->w2 = tw2;
+      }
+      else {
+        move1->w1 = tw2;
+        move1->w2 = tw1;
+      }
+      if (tb1 < tb2) {
+        move1->b1 = tb1;
+        move1->b2 = tb2;
+      }
+      else {
+        move1->b1 = tb2;
+        move1->b2 = tb1;
+      }
+    }
+    if (b2 != 0) {
+      movelist *move2 = malloc(sizeof(movelist));
+      move2->next = NULL;
+      int tw1 = w1;
+      int tw2 = w2;
+      int tb1 = b1;
+      int tb2 = b2;
+      int potential_move = tb2 - 1;
+      bool w1jumped = false;
+      bool w2jumped = false;
+
+      while ((potential_move ==  tb1 && tb1 != 0) || potential_move == tw1 || potential_move == tw2) {
+        if (potential_move == tw1) {
+          w1jumped = true;
+        }
+        if (potential_move == tw2) {
+          w2jumped = true;
+        }
+        potential_move--;
+      }
+      tb2 = potential_move;
+
+      if (w1jumped) {
+        int curr = 1;
+        while (curr == tb1 || curr == tb2 || curr == tw2) {
+          curr++;
+        }
+        tw1 = curr;
+      }
+      if (w2jumped) {
+        int curr = 1;
+        while (curr == tb1 || curr == tb2 || curr == tw1) {
+          curr++;
+        }
+        tw2 = curr;
+      }
+
+      if (tw1 < tw2) {
+        move2->w1 = tw1;
+        move2->w2 = tw2;
+      }
+      else {
+        move2->w1 = tw2;
+        move2->w2 = tw1;
+      }
+      if (tb1 < tb2) {
+        move2->b1 = tb1;
+        move2->b2 = tb2;
+      }
+      else {
+        move2->b1 = tb2;
+        move2->b2 = tb1;
+      }
+
+      if (move1->w1 == -1) {
+        free(move1);
+        return move2;
+      }
+      else {
+        move1->next = move2;
+      }
+    }
+    return move1;
   }
 }
 
@@ -202,95 +378,6 @@ int compute_win(int board[]) {
   }
 }
 
-void compute_move(int dynamic_plr, int static_plr, int enemy_plr1, int enemy_plr2, int player_turn, int *return_board) {
-  int potential_move = dynamic_plr + player_turn;   // player_turn used as direction of movement: +1 or -1
-  bool e1jumped = false;
-  bool e2jumped = false;
-
-  while (static_plr == potential_move || enemy_plr1 == potential_move || enemy_plr2 == potential_move) {
-    if (enemy_plr1 == potential_move) {
-      e1jumped = true;
-    }
-    else if (enemy_plr2 == potential_move) {
-      e2jumped = true;
-    }
-    else if (static_plr == potential_move && (static_plr == 0 || static_plr == 9)) {
-      break;
-    }
-
-    potential_move += player_turn;
-  }
-  dynamic_plr = potential_move;
-
-  int reset_start;
-  if (player_turn == WHITE_TURN) {
-    reset_start = 8;
-  }
-  else {
-    reset_start = 1;
-  }
-
-  if (e1jumped) {
-    int curr = reset_start;
-    while (dynamic_plr == curr || static_plr == curr || enemy_plr2 == curr) {
-      curr -= player_turn;
-    }
-    enemy_plr1 = curr;
-  }
-
-  if (e2jumped) {
-    int curr = reset_start;
-    while (dynamic_plr == curr || static_plr == curr || enemy_plr1 == curr) {
-      curr -= player_turn;
-    }
-    enemy_plr2 = curr;
-  }
-
-  if (player_turn == WHITE_TURN) {
-    if (dynamic_plr < static_plr) {
-      return_board[0] = dynamic_plr;
-      return_board[1] = static_plr;
-    }
-    else {
-      return_board[0] = static_plr;
-      return_board[1] = dynamic_plr;
-    }
-    if (enemy_plr1 < enemy_plr2) {
-      return_board[2] = enemy_plr1;
-      return_board[3] = enemy_plr2;
-    }
-    else {
-      return_board[2] = enemy_plr2;
-      return_board[3] = enemy_plr1;
-    }
-  }
-  else {
-    if (enemy_plr1 < enemy_plr2) {
-      return_board[0] = enemy_plr1;
-      return_board[1] = enemy_plr2;
-    }
-    else {
-      return_board[0] = enemy_plr2;
-      return_board[1] = enemy_plr1;
-    }
-    if (dynamic_plr < static_plr) {
-      return_board[2] = dynamic_plr;
-      return_board[3] = static_plr;
-    }
-    else {
-      return_board[2] = static_plr;
-      return_board[3] = dynamic_plr;
-    }
-  }
-}
-
 int main() {
-  int board[] = {3, 5, 6, 7};
-  Val_Board move;
-  minimax(board, NEG_INF, POS_INF, WHITE_TURN, 0, 32, &move);
-
-  printf("Starting Position: %d%d%d%d\n\n", board[0], board[1], board[2], board[3]);
-  printf("Chosen Move: %d%d%d%d\n", move.best_choice[0], move.best_choice[1], move.best_choice[2], move.best_choice[3]);
-  printf("Value: %d\n", move.val);
-  printf("Moves Considered: %d\n", static_counter);
+  return 0;
 }
