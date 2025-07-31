@@ -23,10 +23,10 @@ typedef struct movelist{
 // Function declarations
 int static_estimator(int[], int);
 int compute_win(int[]);
-int white_maximizer(int[], int, int, int, int);
-int black_minimizer(int[], int, int, int, int);
+int white_maximizer(int[], int, int, int);
+int black_minimizer(int[], int, int, int);
 int minimax(int[], int, int);
-movelist* compute_moves(int, int, int, int, int);
+movelist* compute_moves(int[], int);
 
 int minimax(int board[], int depth, int player_turn) {
   if (depth < 0) {
@@ -39,17 +39,134 @@ int minimax(int board[], int depth, int player_turn) {
 
   int checkwin = compute_win(board);
   if (checkwin != 0) {
-    
+    best_move[0] = -2;
+    best_move[1] = -2;
+    best_move[2] = -2;
+    best_move[3] = -2;
+    return 0;
   }
   movelist* moves = compute_moves(board, player_turn);
+  
+  if (player_turn == WHITE_TURN) {
+    int value = NEG_INF;
+    movelist* curr = moves;
+
+    while (curr != NULL) {
+      int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
+      int estimate = black_minimizer(current_move, value, POS_INF, depth-1);   //At root level so alpha is equivalent to value in this case
+      if (estimate > value) {
+        value = estimate; 
+        best_move[0] = curr->w1;
+        best_move[1] = curr->w2;
+        best_move[2] = curr->b1;
+        best_move[3] = curr->b2;
+      }
+      
+      // iteration
+      movelist* garbage = curr;
+      curr = curr->next;
+      free(garbage);
+    }
+    return value;
+  }
+  else { 
+    int value = POS_INF;
+    movelist* curr = moves;
+
+    while (curr != NULL) {
+      int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
+      int estimate = white_maximizer(current_move, NEG_INF, value, depth-1);   //At root level so beta is equivalent to value in this case
+      if (estimate < value) {
+        value = estimate; 
+        best_move[0] = curr->w1;
+        best_move[1] = curr->w2;
+        best_move[2] = curr->b1;
+        best_move[3] = curr->b2;
+      }
+      
+      // iteration
+      movelist* garbage = curr;
+      curr = curr->next;
+      free(garbage);
+    }
+    return value;
+  }
 }
 
-int white_maximizer(int board[], int alpha, int beta, int depth, int player_turn) {
-  return 0;
+int white_maximizer(int board[], int alpha, int beta, int depth) {
+  if (depth == 0) {
+    return static_estimator(board, WHITE_TURN);
+  }
+
+  int checkwin = compute_win(board);
+  if (checkwin != 0) { return checkwin; }
+
+  movelist* moves = compute_moves(board, WHITE_TURN);
+  int value = NEG_INF;
+  movelist* curr = moves;
+
+  while (curr != NULL) {
+    int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
+    int estimate = black_minimizer(current_move, alpha, beta, depth-1);
+    if (estimate > value) {
+      value = estimate; 
+    }
+
+    // if beta test fails, clean up memory and return early
+    if (value >= beta) {
+      while(curr != NULL) {
+        movelist* garbage = curr;
+        curr = curr->next;
+        free(garbage);
+      }
+      return value;
+    }
+    alpha = value > alpha ? value : alpha;
+    
+    // iteration
+    movelist* garbage = curr;
+    curr = curr->next;
+    free(garbage);
+  }
+  return value;
 }
 
-int black_minimizer(int board[], int alpha, int beta, int depth, int player_turn) {
-  return 0;
+int black_minimizer(int board[], int alpha, int beta, int depth) {
+  if (depth == 0) {
+    return static_estimator(board, BLACK_TURN);
+  }
+
+  int checkwin = compute_win(board);
+  if (checkwin != 0) { return checkwin; }
+
+  movelist* moves = compute_moves(board, BLACK_TURN);
+  int value = POS_INF;
+  movelist* curr = moves;
+
+  while (curr != NULL) {
+    int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
+    int estimate = white_maximizer(current_move, alpha, beta, depth-1);
+    if (estimate < value) {
+      value = estimate; 
+    }
+
+    // if alpha test fails, clean up memory and return early
+    if (value <= alpha) {
+      while(curr != NULL) {
+        movelist* garbage = curr;
+        curr = curr->next;
+        free(garbage);
+      }
+      return value;
+    }
+    beta = value < beta ? value : beta;
+    
+    // iteration
+    movelist* garbage = curr;
+    curr = curr->next;
+    free(garbage);
+  }
+  return value;
 }
 
 movelist* compute_moves(int board[], int player_turn) {
@@ -379,5 +496,18 @@ int compute_win(int board[]) {
 }
 
 int main() {
-  return 0;
+  int board[] = {3, 6, 7, 8};
+  int player_turn = WHITE_TURN;
+  int value = minimax(board, 64, player_turn);
+
+  printf("Starting Board: %d%d%d%d\n", board[0], board[1], board[2], board[3]);
+  if (player_turn == WHITE_TURN) {
+    printf("Player Turn: WHITE\n\n");
+  }
+  else {
+    printf("Player Turn: BLACK\n\n");
+  }
+  printf("Best Move: %d%d%d%d\n", best_move[0], best_move[1], best_move[2], best_move[3]);
+  printf("Value: %d\n", value);
+  printf("Leaf nodes analyzed: %d", static_counter);
 }
