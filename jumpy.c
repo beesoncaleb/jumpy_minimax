@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 // Global variables and definitions
@@ -9,411 +10,283 @@
 #define POS_INF 999999
 #define NEG_INF -999999
 int static_counter = 0;
-int best_move[BOARD_LEN];
-
-// singly linked list of moves
-typedef struct movelist{
-  int w1;
-  int w2;
-  int b1;
-  int b2;
-  struct movelist* next;
-} movelist;
+int computer_board[BOARD_LEN];
 
 // Function declarations
 int static_estimator(int[], int);
 int compute_win(int[]);
-int white_maximizer(int[], int, int, int);
-int black_minimizer(int[], int, int, int);
 int minimax(int[], int, int);
-movelist* compute_moves(int[], int);
+void white_maxi(int[], int, int, int, int);
+void black_mini(int[], int, int, int, int);
+void compute_moves(int[], int, int[][BOARD_LEN]) {
+void print_board(int*);
+int handle_playerturn(int*);
 
-int minimax(int board[], int depth, int player_turn) {
-  if (depth < 0) {
-    best_move[0] = -1;
-    best_move[1] = -1;
-    best_move[2] = -1;
-    best_move[3] = -1;
-    return 0;
+int minimax(int* board, int depth, int player_turn) {
+  if (depth == 0) {
+    return static_estimator(board, player_turn);
   }
 
-  int checkwin = compute_win(board);
-  if (checkwin != 0) {
-    best_move[0] = -2;
-    best_move[1] = -2;
-    best_move[2] = -2;
-    best_move[3] = -2;
-    return 0;
+  int wincheck = compute_win(board);
+  if (wincheck != 0){
+    return wincheck;
   }
-  movelist* moves = compute_moves(board, player_turn);
-  
+
+  int alpha = NEG_INF;
+  int beta = POS_INF;
   if (player_turn == WHITE_TURN) {
-    int value = NEG_INF;
-    movelist* curr = moves;
+    int computed_moves[2][BOARD_LEN];
+    compute_moves(board, player_turn, computed_moves);
+    for (int i=0; i<2; i++) {
+      if (computed_moves[i][0] == -1) { continue; }
 
-    while (curr != NULL) {
-      int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
-      int estimate = black_minimizer(current_move, value, POS_INF, depth-1);   //At root level so alpha is equivalent to value in this case
-      if (estimate > value) {
-        value = estimate; 
-        best_move[0] = curr->w1;
-        best_move[1] = curr->w2;
-        best_move[2] = curr->b1;
-        best_move[3] = curr->b2;
-      }
       
-      // iteration
-      movelist* garbage = curr;
-      curr = curr->next;
-      free(garbage);
     }
-    return value;
   }
-  else { 
-    int value = POS_INF;
-    movelist* curr = moves;
-
-    while (curr != NULL) {
-      int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
-      int estimate = white_maximizer(current_move, NEG_INF, value, depth-1);   //At root level so beta is equivalent to value in this case
-      if (estimate < value) {
-        value = estimate; 
-        best_move[0] = curr->w1;
-        best_move[1] = curr->w2;
-        best_move[2] = curr->b1;
-        best_move[3] = curr->b2;
-      }
-      
-      // iteration
-      movelist* garbage = curr;
-      curr = curr->next;
-      free(garbage);
-    }
-    return value;
+  else {
   }
 }
 
-int white_maximizer(int board[], int alpha, int beta, int depth) {
-  if (depth == 0) {
-    return static_estimator(board, WHITE_TURN);
-  }
-
-  int checkwin = compute_win(board);
-  if (checkwin != 0) { return checkwin; }
-
-  movelist* moves = compute_moves(board, WHITE_TURN);
-  int value = NEG_INF;
-  movelist* curr = moves;
-
-  while (curr != NULL) {
-    int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
-    int estimate = black_minimizer(current_move, alpha, beta, depth-1);
-    if (estimate > value) {
-      value = estimate; 
-    }
-
-    // if beta test fails, clean up memory and return early
-    if (value >= beta) {
-      while(curr != NULL) {
-        movelist* garbage = curr;
-        curr = curr->next;
-        free(garbage);
-      }
-      return value;
-    }
-    alpha = value > alpha ? value : alpha;
-    
-    // iteration
-    movelist* garbage = curr;
-    curr = curr->next;
-    free(garbage);
-  }
-  return value;
+int white_maxi(int* board, int alpha, int beta, int depth, int player_turn) {
+  return;
 }
 
-int black_minimizer(int board[], int alpha, int beta, int depth) {
-  if (depth == 0) {
-    return static_estimator(board, BLACK_TURN);
-  }
-
-  int checkwin = compute_win(board);
-  if (checkwin != 0) { return checkwin; }
-
-  movelist* moves = compute_moves(board, BLACK_TURN);
-  int value = POS_INF;
-  movelist* curr = moves;
-
-  while (curr != NULL) {
-    int current_move[] = {curr->w1, curr->w2, curr->b1, curr->b2};
-    int estimate = white_maximizer(current_move, alpha, beta, depth-1);
-    if (estimate < value) {
-      value = estimate; 
-    }
-
-    // if alpha test fails, clean up memory and return early
-    if (value <= alpha) {
-      while(curr != NULL) {
-        movelist* garbage = curr;
-        curr = curr->next;
-        free(garbage);
-      }
-      return value;
-    }
-    beta = value < beta ? value : beta;
-    
-    // iteration
-    movelist* garbage = curr;
-    curr = curr->next;
-    free(garbage);
-  }
-  return value;
+int black_mini(int* board, int alpha, int beta, int depth, int player_turn) {
+  return;
 }
 
-movelist* compute_moves(int board[], int player_turn) {
+// REFACTOR WITH HELPER LATER
+void compute_moves(int* board, int player_turn, int return_board[][BOARD_LEN]) {
   int w1 = board[0];
   int w2 = board[1];
   int b1 = board[2];
   int b2 = board[3];
 
+  // mark w1 in both boards in case no new computed move available
+  return_board[0][0] = -1;
+  return_board[1][0] = -1;
+
   if (player_turn == WHITE_TURN) {
-    movelist *move1 = malloc(sizeof(movelist));
-    move1->next = NULL;
-    move1->w1 = -1;   // use w1 to signal whether ally2 should extend linkedlist or not
     if (w1 != 9) {
-      int tw1 = w1;
-      int tw2 = w2;
-      int tb1 = b1;
-      int tb2 = b2;
-      int potential_move = tw1 + 1;
-      bool b1jumped = false;
-      bool b2jumped = false;
+      int temp_w1 = w1;
+      int temp_w2 = w2;
+      int temp_b1 = b1;
+      int temp_b2 = b2;
 
-      while ((potential_move ==  tw2 && tw2 != 9) || potential_move == tb1 || potential_move == tb2) {
-        if (potential_move == tb1) {
-          b1jumped = true;
-        }
-        if (potential_move == tb2) {
-          b2jumped = true;
-        }
-        potential_move++;
-      }
-      tw1 = potential_move;
+      int pos = temp_w1 + 1;
+      bool b1jump = false;
+      bool b2jump = false;
 
-      if (b1jumped) {
-        int curr = 8;
-        while (curr == tw1 || curr == tw2 || curr == tb2) {
-          curr--;
+      while ((pos == temp_w2 && temp_w2 != 9) || pos == temp_b1 || pos == temp_b2) {
+        if (pos == temp_b1) {
+          b1jump = true;
         }
-        tb1 = curr;
+        if (pos == temp_b2) {
+          b2jump = true;
+        }
+        pos++;
       }
-      if (b2jumped) {
-        int curr = 8;
-        while (curr == tw1 || curr == tw2 || curr == tb1) {
-          curr--;
+      temp_w1 = pos;
+
+      if (b2jump) {
+        int start = 8;
+        while (start == temp_w1 || start == temp_w2 || start == temp_b1){
+          start--;
         }
-        tb2 = curr;
+        temp_b2 = start;
+      }
+      if (b1jump) {
+        int start = 8;
+        while (start == temp_w1 || start == temp_w2 || start == temp_b2){
+          start--;
+        }
+        temp_b1 = start;
       }
 
-      if (tw1 < tw2) {
-        move1->w1 = tw1;
-        move1->w2 = tw2;
+      // return board in a sorted order
+      if (temp_w1 < temp_w2) {
+        return_board[0][0] = temp_w1;
+        return_board[0][1] = temp_w2;
       }
       else {
-        move1->w1 = tw2;
-        move1->w2 = tw1;
+        return_board[0][0] = temp_w2;
+        return_board[0][1] = temp_w1;
       }
-      if (tb1 < tb2) {
-        move1->b1 = tb1;
-        move1->b2 = tb2;
+      if (temp_b1 < temp_b2) {
+        return_board[0][2] = temp_b1;
+        return_board[0][3] = temp_b2;
       }
       else {
-        move1->b1 = tb2;
-        move1->b2 = tb1;
+        return_board[0][2] = temp_b2;
+        return_board[0][3] = temp_b1;
       }
     }
+    
     if (w2 != 9) {
-      movelist *move2 = malloc(sizeof(movelist));
-      move2->next = NULL;
-      int tw1 = w1;
-      int tw2 = w2;
-      int tb1 = b1;
-      int tb2 = b2;
-      int potential_move = tw2 + 1;
-      bool b1jumped = false;
-      bool b2jumped = false;
+      int temp_w1 = w1;
+      int temp_w2 = w2;
+      int temp_b1 = b1;
+      int temp_b2 = b2;
 
-      while ((potential_move ==  tw1 && tw1 != 9) || potential_move == tb1 || potential_move == tb2) {
-        if (potential_move == tb1) {
-          b1jumped = true;
-        }
-        if (potential_move == tb2) {
-          b2jumped = true;
-        }
-        potential_move++;
-      }
-      tw2 = potential_move;
+      int pos = temp_w2 + 1;
+      bool b1jump = false;
+      bool b2jump = false;
 
-      if (b1jumped) {
-        int curr = 8;
-        while (curr == tw1 || curr == tw2 || curr == tb2) {
-          curr--;
+      while ((pos == temp_w1 && temp_w1 != 9) || pos == temp_b1 || pos == temp_b2) {
+        if (pos == temp_b1) {
+          b1jump = true;
         }
-        tb1 = curr;
+        if (pos == temp_b2) {
+          b2jump = true;
+        }
+        pos++;
       }
-      if (b2jumped) {
-        int curr = 8;
-        while (curr == tw1 || curr == tw2 || curr == tb1) {
-          curr--;
+      temp_w2 = pos;
+
+      if (b2jump) {
+        int start = 8;
+        while (start == temp_w1 || start == temp_w2 || start == temp_b1){
+          start--;
         }
-        tb2 = curr;
+        temp_b2 = start;
+      }
+      if (b1jump) {
+        int start = 8;
+        while (start == temp_w1 || start == temp_w2 || start == temp_b2){
+          start--;
+        }
+        temp_b1 = start;
       }
 
-      if (tw1 < tw2) {
-        move2->w1 = tw1;
-        move2->w2 = tw2;
+      // return board in a sorted order
+      if (temp_w1 < temp_w2) {
+        return_board[1][0] = temp_w1;
+        return_board[1][1] = temp_w2;
       }
       else {
-        move2->w1 = tw2;
-        move2->w2 = tw1;
+        return_board[1][0] = temp_w2;
+        return_board[1][1] = temp_w1;
       }
-      if (tb1 < tb2) {
-        move2->b1 = tb1;
-        move2->b2 = tb2;
-      }
-      else {
-        move2->b1 = tb2;
-        move2->b2 = tb1;
-      }
-
-      if (move1->w1 == -1) {
-        free(move1);
-        return move2;
+      if (temp_b1 < temp_b2) {
+        return_board[1][2] = temp_b1;
+        return_board[1][3] = temp_b2;
       }
       else {
-        move1->next = move2;
+        return_board[1][2] = temp_b2;
+        return_board[1][3] = temp_b1;
       }
     }
-    return move1;
   }
+
   else {
-    movelist *move1 = malloc(sizeof(movelist));
-    move1->next = NULL;
-    move1->w1 = -1;   // use w1 to signal whether ally2 should extend linkedlist or not
     if (b1 != 0) {
-      int tw1 = w1;
-      int tw2 = w2;
-      int tb1 = b1;
-      int tb2 = b2;
-      int potential_move = tb1 - 1;
-      bool w1jumped = false;
-      bool w2jumped = false;
+      int temp_w1 = w1;
+      int temp_w2 = w2;
+      int temp_b1 = b1;
+      int temp_b2 = b2;
 
-      while ((potential_move ==  tb2 && tb2 != 0) || potential_move == tw1 || potential_move == tw2) {
-        if (potential_move == tw1) {
-          w1jumped = true;
-        }
-        if (potential_move == tw2) {
-          w2jumped = true;
-        }
-        potential_move--;
-      }
-      tb1 = potential_move;
+      int pos = temp_b1 - 1;
+      bool w1jump = false;
+      bool w2jump = false;
 
-      if (w1jumped) {
-        int curr = 1;
-        while (curr == tb1 || curr == tb2 || curr == tw2) {
-          curr++;
+      while ((pos == temp_b2 && temp_b2 != 0) || pos == temp_w1 || pos == temp_w2) {
+        if (pos == temp_w1) {
+          w1jump = true;
         }
-        tw1 = curr;
+        if (pos == temp_w2) {
+          w2jump = true;
+        }
+        pos--;
       }
-      if (w2jumped) {
-        int curr = 1;
-        while (curr == tb1 || curr == tb2 || curr == tw1) {
-          curr++;
+      temp_b1 = pos;
+
+      if (w1jump) {
+        int start = 1;
+        while (start == temp_b1 || start == temp_b2 || start == temp_w2){
+          start++;
         }
-        tw2 = curr;
+        temp_w1 = start;
+      }
+      if (w2jump) {
+        int start = 1;
+        while (start == temp_b1 || start == temp_b2 || start == temp_w1){
+          start++;
+        }
+        temp_w2 = start;
       }
 
-      if (tw1 < tw2) {
-        move1->w1 = tw1;
-        move1->w2 = tw2;
+      // return board in a sorted order
+      if (temp_w1 < temp_w2) {
+        return_board[0][0] = temp_w1;
+        return_board[0][1] = temp_w2;
       }
       else {
-        move1->w1 = tw2;
-        move1->w2 = tw1;
+        return_board[0][0] = temp_w2;
+        return_board[0][1] = temp_w1;
       }
-      if (tb1 < tb2) {
-        move1->b1 = tb1;
-        move1->b2 = tb2;
+      if (temp_b1 < temp_b2) {
+        return_board[0][2] = temp_b1;
+        return_board[0][3] = temp_b2;
       }
       else {
-        move1->b1 = tb2;
-        move1->b2 = tb1;
+        return_board[0][2] = temp_b2;
+        return_board[0][3] = temp_b1;
       }
     }
     if (b2 != 0) {
-      movelist *move2 = malloc(sizeof(movelist));
-      move2->next = NULL;
-      int tw1 = w1;
-      int tw2 = w2;
-      int tb1 = b1;
-      int tb2 = b2;
-      int potential_move = tb2 - 1;
-      bool w1jumped = false;
-      bool w2jumped = false;
+      int temp_w1 = w1;
+      int temp_w2 = w2;
+      int temp_b1 = b1;
+      int temp_b2 = b2;
 
-      while ((potential_move ==  tb1 && tb1 != 0) || potential_move == tw1 || potential_move == tw2) {
-        if (potential_move == tw1) {
-          w1jumped = true;
-        }
-        if (potential_move == tw2) {
-          w2jumped = true;
-        }
-        potential_move--;
-      }
-      tb2 = potential_move;
+      int pos = temp_b2 - 1;
+      bool w1jump = false;
+      bool w2jump = false;
 
-      if (w1jumped) {
-        int curr = 1;
-        while (curr == tb1 || curr == tb2 || curr == tw2) {
-          curr++;
+      while ((pos == temp_b1 && temp_b1 != 0) || pos == temp_w1 || pos == temp_w2) {
+        if (pos == temp_w1) {
+          w1jump = true;
         }
-        tw1 = curr;
+        if (pos == temp_w2) {
+          w2jump = true;
+        }
+        pos--;
       }
-      if (w2jumped) {
-        int curr = 1;
-        while (curr == tb1 || curr == tb2 || curr == tw1) {
-          curr++;
+      temp_b2 = pos;
+
+      if (w1jump) {
+        int start = 1;
+        while (start == temp_b1 || start == temp_b2 || start == temp_w2){
+          start++;
         }
-        tw2 = curr;
+        temp_w1 = start;
+      }
+      if (w2jump) {
+        int start = 1;
+        while (start == temp_b1 || start == temp_b2 || start == temp_w1){
+          start++;
+        }
+        temp_w2 = start;
       }
 
-      if (tw1 < tw2) {
-        move2->w1 = tw1;
-        move2->w2 = tw2;
+      // return board in a sorted order
+      if (temp_w1 < temp_w2) {
+        return_board[1][0] = temp_w1;
+        return_board[1][1] = temp_w2;
       }
       else {
-        move2->w1 = tw2;
-        move2->w2 = tw1;
+        return_board[1][0] = temp_w2;
+        return_board[1][1] = temp_w1;
       }
-      if (tb1 < tb2) {
-        move2->b1 = tb1;
-        move2->b2 = tb2;
-      }
-      else {
-        move2->b1 = tb2;
-        move2->b2 = tb1;
-      }
-
-      if (move1->w1 == -1) {
-        free(move1);
-        return move2;
+      if (temp_b1 < temp_b2) {
+        return_board[1][2] = temp_b1;
+        return_board[1][3] = temp_b2;
       }
       else {
-        move1->next = move2;
+        return_board[1][2] = temp_b2;
+        return_board[1][3] = temp_b1;
       }
     }
-    return move1;
   }
 }
 
@@ -495,19 +368,85 @@ int compute_win(int board[]) {
   }
 }
 
-int main() {
-  int board[] = {3, 6, 7, 8};
-  int player_turn = WHITE_TURN;
-  int value = minimax(board, 64, player_turn);
+void print_board(int* board) {
+  int w1 = board[0];
+  int w2 = board[1];
+  int b1 = board[2];
+  int b2 = board[3];
 
-  printf("Starting Board: %d%d%d%d\n", board[0], board[1], board[2], board[3]);
-  if (player_turn == WHITE_TURN) {
-    printf("Player Turn: WHITE\n\n");
+  printf("\n   Current Board\n");
+  printf(" |1|2|3|4|5|6|7|8| \n");
+  char pieces[] = "                   ";   
+
+  pieces[w1*2] = 'w';
+  pieces[w2*2] = 'w';
+  pieces[b1*2] = 'b';
+  pieces[b2*2] = 'b';
+  printf("%s\n", pieces);
+}
+
+// come back and add error handling
+inline int handle_playerturn(int* board_ret) {
+  printf("\nPLAYER_MOVE");
+  char board_str[6];
+  printf("\nPlayer enter a board position: ");
+  fgets(board_str, 6, stdin);
+
+  board_ret[0] = board_str[0]-48;
+  board_ret[1] = board_str[1]-48;
+  board_ret[2] = board_str[2]-48;
+  board_ret[3] = board_str[3]-48;
+  print_board(board_ret);
+  return 0;
+}
+
+int main() {
+  printf("\033[2J\033[H");
+  printf("Welcome to Jumpy\n\n");
+  printf("Which side will you play as? (W/B) ");
+  while (true) {
+    // get player turn
+    char turn_selection[3];
+    int player_turn;
+    fgets(turn_selection, 3, stdin);
+    while (true) {
+      if (turn_selection[0] == 'W' || turn_selection[0] == 'w') {
+        player_turn = WHITE_TURN;
+        break;
+      }
+      else if (turn_selection[0] == 'B' || turn_selection[0] == 'b') {
+        player_turn = BLACK_TURN;
+        break;
+      }
+      else {
+        printf("Must choose black (B/b) or white (W/w) ");
+        fgets(turn_selection, 3, stdin);
+      }
+    }
+
+    printf("\033[2J\033[H");
+    printf("GAME START\n");
+    int board[] = {1, 2, 7, 8};
+    print_board(board);
+    if (player_turn == WHITE_TURN) {
+      while (true) {
+        handle_playerturn(board);
+
+        // COMPUTER MOVE
+        printf("\nCOMPUTER MOVE\n");
+        int comp_board[BOARD_LEN];
+        break;
+      }
+    }
+    else {
+      while (true) {
+        // COMPUTER MOVE
+        printf("\nCOMPUTER MOVE\n");
+        break;
+
+        handle_playerturn(board);
+      }
+    }
+    break;
   }
-  else {
-    printf("Player Turn: BLACK\n\n");
-  }
-  printf("Best Move: %d%d%d%d\n", best_move[0], best_move[1], best_move[2], best_move[3]);
-  printf("Value: %d\n", value);
-  printf("Leaf nodes analyzed: %d", static_counter);
 }
