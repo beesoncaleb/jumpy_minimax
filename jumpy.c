@@ -12,13 +12,23 @@
 int static_counter = 0;
 int computer_board[BOARD_LEN];
 
+// ASCII art
+char game_start[] =
+    R"(   ______       _       ____    ____  ________     ______   _________     _       _______   _________  )" "\n"
+    R"( .' ___  |     / \     |_   \  /   _||_   __  |  .' ____ \ |  _   _  |   / \     |_   __ \ |  _   _  | )" "\n"
+    R"(/ .'   \_|    / _ \      |   \/   |    | |_ \_|  | (___ \_||_/ | | \_|  / _ \      | |__) ||_/ | | \_| )" "\n"
+    R"(| |   ____   / ___ \     | |\  /| |    |  _| _    _.____`.     | |     / ___ \     |  __ /     | |     )" "\n"
+    R"(\ `.___]  |_/ /   \ \_  _| |_\/_| |_  _| |__/ |  | \____) |   _| |_  _/ /   \ \_  _| |  \ \_  _| |_    )" "\n"
+    R"( `._____.'|____| |____||_____||_____||________|   \______.'  |_____||____| |____||____| |___||_____|   )" "\n";
+
 // Function declarations
 int static_estimator(int[], int);
 int compute_win(int[]);
 int minimax(int[], int, int);
-void white_maxi(int[], int, int, int, int);
-void black_mini(int[], int, int, int, int);
-void compute_moves(int[], int, int[][BOARD_LEN]) {
+int white_maxi(int[], int, int, int, int);
+int black_mini(int[], int, int, int, int);
+void compute_moves(int[], int, int[][BOARD_LEN]);
+void single_move_helper(int, int, int, int, int, int[]);
 void print_board(int*);
 int handle_playerturn(int*);
 
@@ -48,244 +58,96 @@ int minimax(int* board, int depth, int player_turn) {
 }
 
 int white_maxi(int* board, int alpha, int beta, int depth, int player_turn) {
-  return;
+  return 0;
 }
 
 int black_mini(int* board, int alpha, int beta, int depth, int player_turn) {
-  return;
+  return 0;
 }
 
-// REFACTOR WITH HELPER LATER
-void compute_moves(int* board, int player_turn, int return_board[][BOARD_LEN]) {
+// helper that can caculate a single move for a1 regardless of color
+// use player_turn as direction increment (+1 for white, -1 for black)
+inline void single_move_helper(int a1, int a2, int e1, int e2, int player_turn, int ret_board[]) {
+  int pos = a1 += player_turn;
+  int goal = player_turn == WHITE_TURN ? 9 : 0;
+  bool a2jump = false;
+  bool e1jump = false;
+  bool e2jump = false;
+
+  // move a1
+  while (pos == e1 || pos == e2 || (pos == a2 && pos != goal)) {
+    if (pos == e1) { e1jump = true; }
+    if (pos == e2) { e2jump = true; }
+    if (pos == a2) { a2jump = true; }
+    pos += player_turn;
+  }
+  a1 = pos;
+
+  // reset any piece if able
+  int reset_start = player_turn == WHITE_TURN ? 8 : 1;
+  if (e1jump && !e2jump && !a2jump){
+    while (reset_start == e2 || reset_start == a1 || reset_start == a2){
+      reset_start -= player_turn;
+    }
+    e1 = reset_start;
+  }
+  if (e2jump && !e1jump && !a2jump){
+    while (reset_start == e1 || reset_start == a1 || reset_start == a2){
+      reset_start -= player_turn;
+    }
+    e2 = reset_start;
+  }
+
+  ret_board[0] = a1;
+  ret_board[1] = a2;
+  ret_board[2] = e1;
+  ret_board[3] = e2;
+}
+
+void compute_moves(int board[], int player_turn, int ret_boards[][BOARD_LEN]) {
   int w1 = board[0];
   int w2 = board[1];
   int b1 = board[2];
   int b2 = board[3];
 
-  // mark w1 in both boards in case no new computed move available
-  return_board[0][0] = -1;
-  return_board[1][0] = -1;
+  // flag w1 pieces in both boards for moves that don't exist
+  ret_boards[0][0] = -1;
+  ret_boards[1][0] = -1;
 
   if (player_turn == WHITE_TURN) {
-    if (w1 != 9) {
-      int temp_w1 = w1;
-      int temp_w2 = w2;
-      int temp_b1 = b1;
-      int temp_b2 = b2;
-
-      int pos = temp_w1 + 1;
-      bool b1jump = false;
-      bool b2jump = false;
-
-      while ((pos == temp_w2 && temp_w2 != 9) || pos == temp_b1 || pos == temp_b2) {
-        if (pos == temp_b1) {
-          b1jump = true;
-        }
-        if (pos == temp_b2) {
-          b2jump = true;
-        }
-        pos++;
-      }
-      temp_w1 = pos;
-
-      if (b2jump) {
-        int start = 8;
-        while (start == temp_w1 || start == temp_w2 || start == temp_b1){
-          start--;
-        }
-        temp_b2 = start;
-      }
-      if (b1jump) {
-        int start = 8;
-        while (start == temp_w1 || start == temp_w2 || start == temp_b2){
-          start--;
-        }
-        temp_b1 = start;
-      }
-
-      // return board in a sorted order
-      if (temp_w1 < temp_w2) {
-        return_board[0][0] = temp_w1;
-        return_board[0][1] = temp_w2;
-      }
-      else {
-        return_board[0][0] = temp_w2;
-        return_board[0][1] = temp_w1;
-      }
-      if (temp_b1 < temp_b2) {
-        return_board[0][2] = temp_b1;
-        return_board[0][3] = temp_b2;
-      }
-      else {
-        return_board[0][2] = temp_b2;
-        return_board[0][3] = temp_b1;
-      }
+    if (w1 != 9){
+      int tmp[BOARD_LEN];
+      single_move_helper(w1, w2, b1, b2, player_turn, tmp);
+      ret_boards[0][0] = tmp[0];
+      ret_boards[0][1] = tmp[1];
+      ret_boards[0][2] = tmp[2];
+      ret_boards[0][3] = tmp[3];
     }
-    
-    if (w2 != 9) {
-      int temp_w1 = w1;
-      int temp_w2 = w2;
-      int temp_b1 = b1;
-      int temp_b2 = b2;
-
-      int pos = temp_w2 + 1;
-      bool b1jump = false;
-      bool b2jump = false;
-
-      while ((pos == temp_w1 && temp_w1 != 9) || pos == temp_b1 || pos == temp_b2) {
-        if (pos == temp_b1) {
-          b1jump = true;
-        }
-        if (pos == temp_b2) {
-          b2jump = true;
-        }
-        pos++;
-      }
-      temp_w2 = pos;
-
-      if (b2jump) {
-        int start = 8;
-        while (start == temp_w1 || start == temp_w2 || start == temp_b1){
-          start--;
-        }
-        temp_b2 = start;
-      }
-      if (b1jump) {
-        int start = 8;
-        while (start == temp_w1 || start == temp_w2 || start == temp_b2){
-          start--;
-        }
-        temp_b1 = start;
-      }
-
-      // return board in a sorted order
-      if (temp_w1 < temp_w2) {
-        return_board[1][0] = temp_w1;
-        return_board[1][1] = temp_w2;
-      }
-      else {
-        return_board[1][0] = temp_w2;
-        return_board[1][1] = temp_w1;
-      }
-      if (temp_b1 < temp_b2) {
-        return_board[1][2] = temp_b1;
-        return_board[1][3] = temp_b2;
-      }
-      else {
-        return_board[1][2] = temp_b2;
-        return_board[1][3] = temp_b1;
-      }
+    if (w2 != 9){
+      int tmp[BOARD_LEN];
+      single_move_helper(w2, w1, b1, b2, player_turn, tmp);
+      ret_boards[1][0] = tmp[1];
+      ret_boards[1][1] = tmp[0];
+      ret_boards[1][2] = tmp[2];
+      ret_boards[1][3] = tmp[3];
     }
   }
-
   else {
     if (b1 != 0) {
-      int temp_w1 = w1;
-      int temp_w2 = w2;
-      int temp_b1 = b1;
-      int temp_b2 = b2;
-
-      int pos = temp_b1 - 1;
-      bool w1jump = false;
-      bool w2jump = false;
-
-      while ((pos == temp_b2 && temp_b2 != 0) || pos == temp_w1 || pos == temp_w2) {
-        if (pos == temp_w1) {
-          w1jump = true;
-        }
-        if (pos == temp_w2) {
-          w2jump = true;
-        }
-        pos--;
-      }
-      temp_b1 = pos;
-
-      if (w1jump) {
-        int start = 1;
-        while (start == temp_b1 || start == temp_b2 || start == temp_w2){
-          start++;
-        }
-        temp_w1 = start;
-      }
-      if (w2jump) {
-        int start = 1;
-        while (start == temp_b1 || start == temp_b2 || start == temp_w1){
-          start++;
-        }
-        temp_w2 = start;
-      }
-
-      // return board in a sorted order
-      if (temp_w1 < temp_w2) {
-        return_board[0][0] = temp_w1;
-        return_board[0][1] = temp_w2;
-      }
-      else {
-        return_board[0][0] = temp_w2;
-        return_board[0][1] = temp_w1;
-      }
-      if (temp_b1 < temp_b2) {
-        return_board[0][2] = temp_b1;
-        return_board[0][3] = temp_b2;
-      }
-      else {
-        return_board[0][2] = temp_b2;
-        return_board[0][3] = temp_b1;
-      }
+      int tmp[BOARD_LEN];
+      single_move_helper(b1, b2, w1, w2, player_turn, tmp);
+      ret_boards[0][0] = tmp[2];
+      ret_boards[0][1] = tmp[3];
+      ret_boards[0][2] = tmp[0];
+      ret_boards[0][3] = tmp[1];
     }
     if (b2 != 0) {
-      int temp_w1 = w1;
-      int temp_w2 = w2;
-      int temp_b1 = b1;
-      int temp_b2 = b2;
-
-      int pos = temp_b2 - 1;
-      bool w1jump = false;
-      bool w2jump = false;
-
-      while ((pos == temp_b1 && temp_b1 != 0) || pos == temp_w1 || pos == temp_w2) {
-        if (pos == temp_w1) {
-          w1jump = true;
-        }
-        if (pos == temp_w2) {
-          w2jump = true;
-        }
-        pos--;
-      }
-      temp_b2 = pos;
-
-      if (w1jump) {
-        int start = 1;
-        while (start == temp_b1 || start == temp_b2 || start == temp_w2){
-          start++;
-        }
-        temp_w1 = start;
-      }
-      if (w2jump) {
-        int start = 1;
-        while (start == temp_b1 || start == temp_b2 || start == temp_w1){
-          start++;
-        }
-        temp_w2 = start;
-      }
-
-      // return board in a sorted order
-      if (temp_w1 < temp_w2) {
-        return_board[1][0] = temp_w1;
-        return_board[1][1] = temp_w2;
-      }
-      else {
-        return_board[1][0] = temp_w2;
-        return_board[1][1] = temp_w1;
-      }
-      if (temp_b1 < temp_b2) {
-        return_board[1][2] = temp_b1;
-        return_board[1][3] = temp_b2;
-      }
-      else {
-        return_board[1][2] = temp_b2;
-        return_board[1][3] = temp_b1;
-      }
+      int tmp[BOARD_LEN];
+      single_move_helper(b2, b1, w1, w2, player_turn, tmp);
+      ret_boards[1][0] = tmp[3];
+      ret_boards[1][1] = tmp[2];
+      ret_boards[1][2] = tmp[0];
+      ret_boards[1][3] = tmp[1];
     }
   }
 }
@@ -374,7 +236,7 @@ void print_board(int* board) {
   int b1 = board[2];
   int b2 = board[3];
 
-  printf("\n   Current Board\n");
+  printf("\nCurrent Board\n");
   printf(" |1|2|3|4|5|6|7|8| \n");
   char pieces[] = "                   ";   
 
@@ -425,7 +287,7 @@ int main() {
     }
 
     printf("\033[2J\033[H");
-    printf("GAME START\n");
+    printf("%s", game_start);
     int board[] = {1, 2, 7, 8};
     print_board(board);
     if (player_turn == WHITE_TURN) {
@@ -433,18 +295,38 @@ int main() {
         handle_playerturn(board);
 
         // COMPUTER MOVE
-        printf("\nCOMPUTER MOVE\n");
-        int comp_board[BOARD_LEN];
+        printf("\nCOMPUTER MOVE\n\n");
+        int comp_boards[2][BOARD_LEN];
+        compute_moves(board, BLACK_TURN, comp_boards);
+        if (comp_boards[0][0] != -1) {
+          printf("Move 1:");
+          print_board(comp_boards[0]);
+        }
+        if (comp_boards[1][0] != -1) {
+          printf("Move 2:");
+          print_board(comp_boards[1]);
+        }
         break;
       }
     }
     else {
+      // FOR TESTING, REORDER AFTER DONE
       while (true) {
-        // COMPUTER MOVE
-        printf("\nCOMPUTER MOVE\n");
-        break;
-
         handle_playerturn(board);
+
+        // COMPUTER MOVE
+        printf("\nCOMPUTER MOVE\n\n");
+        int comp_boards[2][BOARD_LEN];
+        compute_moves(board, WHITE_TURN, comp_boards);
+        if (comp_boards[0][0] != -1) {
+          printf("Move 1:");
+          print_board(comp_boards[0]);
+        }
+        if (comp_boards[1][0] != -1) {
+          printf("Move 2:");
+          print_board(comp_boards[1]);
+        }
+        break;
       }
     }
     break;

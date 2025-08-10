@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O0 -g
+CFLAGS = -Wall -Wextra -std=gnu11 -O0 -g
 
 # Default target
 jumpy: jumpy.c
