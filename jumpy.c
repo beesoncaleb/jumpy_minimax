@@ -286,6 +286,7 @@ void print_board(int* board) {
   pieces[b1*2+1] = 'b';
   pieces[b2*2+1] = 'b';
   printf("%s\n", pieces);
+  printf("%d%d%d%d\n", w1, w2, b1, b2);
 }
 
 // come back and add error handling
@@ -354,12 +355,12 @@ int main() {
     else {
       while (true) {
         //comp move
-        printf("\n\033[31mCOMPUTER MOVE\033[0m\n");
+        printf("\033[31mCOMPUTER MOVE\033[0m\n");
         int value = minimax(board, 60, WHITE_TURN);
         for (int i=0; i<BOARD_LEN; i++) { board[i] = computer_board[i]; } // computer_board is global and stores current comp move
         print_board(board);
         printf("\nEstimated Value: %d\n", value);
-        printf("Static estimates: %d\n", static_counter);
+        printf("Static estimates: %d\n\n", static_counter);
         if (value == 100) {
           printf("-----------------------------------------------------------\n");
           printf("\nCOMPUTER WINS");
