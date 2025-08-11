@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
 
 // Global variables and definitions
 #define BOARD_LEN 4
@@ -246,10 +247,10 @@ int static_estimator(int board[], int player_turn) {
   else {
     int cluster_bias = 0;
     if (player_turn == WHITE_TURN && ((b1 - b2) == 1 || (b1 - b2) == -1) && (b1 != 0 || b2 != 0)) {
-      cluster_bias = 1;
+      cluster_bias = 2;
     }
     if (player_turn == BLACK_TURN && ((w1 - w2) == 1 || (w1 - w2) == -1) && (w1 != 9 || w2 != 9)) {
-      cluster_bias = -1;
+      cluster_bias = -2;
     }
     return cluster_bias + w1 + w2 + b1 + b2 - 18;
   }
@@ -279,8 +280,8 @@ void print_board(int* board) {
   int b2 = board[3];
 
   printf("| |1|2|3|4|5|6|7|8| |\n");
-
-  char pieces[] = "                   ";   
+         
+  char pieces[] = "                    ";   
   pieces[w1*2+1] = 'w';
   pieces[w2*2+1] = 'w';
   pieces[b1*2+1] = 'b';
@@ -336,17 +337,31 @@ int main() {
     if (player_turn == WHITE_TURN) {
       while (true) {
         handle_playerturn(board);
+        int win = compute_win(board);
+        if (win == 100) {
+          printf("\nPLAYER WINS");
+          break;
+        }
 
         //comp move
         printf("\n\033[31mCOMPUTER MOVE\033[0m\n");
+        
+        // benchmark
+        clock_t start = clock();
         int value = minimax(board, 60, BLACK_TURN);
+        clock_t end = clock();
+        double time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+        // benchmark
+        
         for (int i=0; i<BOARD_LEN; i++) { board[i] = computer_board[i]; } // computer_board is global and stores current comp move
         print_board(board);
         printf("\nEstimated Value: %d\n", value);
         printf("Static estimates: %d\n", static_counter);
+        printf("Estimation time: %.6fs\n", time_elapsed);
         printf("-----------------------------------------------------------\n");
 
-        if (value == -100) {
+        win = compute_win(computer_board);
+        if (win == -100) {
           printf("\nCOMPUTER WINS");
           break;
         }
@@ -356,24 +371,35 @@ int main() {
       while (true) {
         //comp move
         printf("\033[31mCOMPUTER MOVE\033[0m\n");
+        
+        // benchmark
+        clock_t start = clock();
         int value = minimax(board, 60, WHITE_TURN);
+        clock_t end = clock();
+        double time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+        // benchmark
+        
         for (int i=0; i<BOARD_LEN; i++) { board[i] = computer_board[i]; } // computer_board is global and stores current comp move
         print_board(board);
         printf("\nEstimated Value: %d\n", value);
-        printf("Static estimates: %d\n\n", static_counter);
-        if (value == 100) {
+        printf("Static estimates: %d\n", static_counter);
+        printf("Estimation time: %.6fs\n\n", time_elapsed);
+
+        int win = compute_win(computer_board);
+        if (win == 100) {
           printf("-----------------------------------------------------------\n");
           printf("\nCOMPUTER WINS");
           break;
         }
 
         handle_playerturn(board);
-        printf("-----------------------------------------------------------\n");
-
-        if (value == -100) {
-          printf("\nCOMPUTER WINS");
+        win = compute_win(board);
+        if (win == -100) {
+          printf("-----------------------------------------------------------\n");
+          printf("\nPLAYER WINS");
           break;
         }
+        printf("-----------------------------------------------------------\n");
       }
     }
     break;
