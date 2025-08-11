@@ -31,7 +31,7 @@ char game_start[] =
     R"( `._____.'|____| |____||_____||_____||________|   \______.'  |_____||____| |____||____| |___||_____|   )" "\n";
 
 // Function declarations
-int static_estimator(int[], int);
+int static_estimator(int[]);
 int compute_win(int[]);
 int minimax(int[], int, int);
 int white_maxi(int[], int, int, int);
@@ -44,7 +44,7 @@ void handle_playerturn(int*);
 int minimax(int* board, int depth, int player_turn) {
   static_counter = 0;
   if (depth == 0) {
-    return static_estimator(board, player_turn);
+    return static_estimator(board);
   }
 
   int wincheck = compute_win(board);
@@ -92,7 +92,7 @@ int minimax(int* board, int depth, int player_turn) {
 
 int white_maxi(int board[], int alpha, int beta, int depth) {
   if (depth == 0) {
-    return static_estimator(board, WHITE_TURN);
+    return static_estimator(board);
   }
 
   int wincheck = compute_win(board);
@@ -119,7 +119,7 @@ int white_maxi(int board[], int alpha, int beta, int depth) {
 
 int black_mini(int board[], int alpha, int beta, int depth) {
   if (depth == 0) {
-    return static_estimator(board, BLACK_TURN);
+    return static_estimator(board);
   }
 
   int wincheck = compute_win(board);
@@ -231,65 +231,15 @@ void compute_moves(int board[], int player_turn, int ret_boards[][BOARD_LEN]) {
   }
 }
 
-int static_estimator(int board[], int player_turn) {
+int static_estimator(int board[]) {
   static_counter++;
   int wincheck = compute_win(board);
-  if (wincheck != 0) { return wincheck; }
-
-  // Evaluate clustering bias
-  int cluster_estimation = 0;
-  for (int i = 0; i < BOARD_LEN; i++) {
-    int piece = board[i];
-
-    // |X|X|X| | | | | |
-    if (1 <= piece && piece <= 3) {
-        cluster_estimation -= 2;
-    }
-
-    // | |X|X|X| | | | |
-    if (2 <= piece && piece <= 4) {
-        cluster_estimation -= 1;
-    }
-
-    // | | | | |X|X|X| |
-    if (5 <= piece && piece <= 7) {
-        cluster_estimation += 1;
-    }
-
-    // | | | | | |X|X|X|
-    if (6 <= piece && piece <= 8) {
-        cluster_estimation += 2;
-    }
-
-    if (piece == 0) {
-        cluster_estimation -= 3;
-    }
-    if (piece == 9) {
-        cluster_estimation += 3;
-    }
-  }
-
-  // Evaluate turn bias and enemy cluster bias
-  int w1 = board[0];
-  int w2 = board[1];
-  int b1 = board[2];
-  int b2 = board[3];
-  int enemy_cluster_bias = 0;
-  int turn_bias = 0;
-  if (player_turn == WHITE_TURN) { 
-    turn_bias = 2; 
-    if (abs(b1-b2) == 1 && (b1 != 0 || b2 != 0)) {
-      enemy_cluster_bias = 1;
-    }
+  if (wincheck != 0) {
+    return wincheck; 
   }
   else {
-    turn_bias = -2; 
-    if (abs(w1-w2) == 1 && (w1 != 9 || w2 != 9)) {
-      enemy_cluster_bias = -1;
-    }
+    return board[0] + board[1] + board[2] + board[3] - 18;
   }
-
-  return cluster_estimation + turn_bias + enemy_cluster_bias;
 }
 
 int compute_win(int board[]) {
