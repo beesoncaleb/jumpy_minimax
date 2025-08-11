@@ -31,7 +31,7 @@ char game_start[] =
     R"( `._____.'|____| |____||_____||_____||________|   \______.'  |_____||____| |____||____| |___||_____|   )" "\n";
 
 // Function declarations
-int static_estimator(int[]);
+int static_estimator(int[], int);
 int compute_win(int[]);
 int minimax(int[], int, int);
 int white_maxi(int[], int, int, int);
@@ -44,7 +44,7 @@ void handle_playerturn(int*);
 int minimax(int* board, int depth, int player_turn) {
   static_counter = 0;
   if (depth == 0) {
-    return static_estimator(board);
+    return static_estimator(board, player_turn);
   }
 
   int wincheck = compute_win(board);
@@ -92,7 +92,7 @@ int minimax(int* board, int depth, int player_turn) {
 
 int white_maxi(int board[], int alpha, int beta, int depth) {
   if (depth == 0) {
-    return static_estimator(board);
+    return static_estimator(board, WHITE_TURN);
   }
 
   int wincheck = compute_win(board);
@@ -119,7 +119,7 @@ int white_maxi(int board[], int alpha, int beta, int depth) {
 
 int black_mini(int board[], int alpha, int beta, int depth) {
   if (depth == 0) {
-    return static_estimator(board);
+    return static_estimator(board, BLACK_TURN);
   }
 
   int wincheck = compute_win(board);
@@ -231,14 +231,27 @@ void compute_moves(int board[], int player_turn, int ret_boards[][BOARD_LEN]) {
   }
 }
 
-int static_estimator(int board[]) {
+int static_estimator(int board[], int player_turn) {
   static_counter++;
+
+  int w1 = board[0];
+  int w2 = board[1];
+  int b1 = board[2];
+  int b2 = board[3];
+
   int wincheck = compute_win(board);
   if (wincheck != 0) {
     return wincheck; 
   }
   else {
-    return board[0] + board[1] + board[2] + board[3] - 18;
+    int cluster_bias = 0;
+    if (player_turn == WHITE_TURN && ((b1 - b2) == 1 || (b1 - b2) == -1) && (b1 != 0 || b2 != 0)) {
+      cluster_bias = 1;
+    }
+    if (player_turn == BLACK_TURN && ((w1 - w2) == 1 || (w1 - w2) == -1) && (w1 != 9 || w2 != 9)) {
+      cluster_bias = -1;
+    }
+    return cluster_bias + w1 + w2 + b1 + b2 - 18;
   }
 }
 
@@ -277,7 +290,7 @@ void print_board(int* board) {
 
 // come back and add error handling
 inline void handle_playerturn(int* board_ret) {
-  printf("\n\033[34mPLAYER MOVE\033[0m\n");
+  printf("\033[34mPLAYER MOVE\033[0m\n");
   char board_str[6];
   printf("Player enter a board position: ");
   fgets(board_str, 6, stdin);
